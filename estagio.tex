@@ -1,0 +1,187 @@
+\documentclass[12pt]{article}
+
+\usepackage{sbc-template}
+
+\usepackage[brazil]{babel} % Tradução de seções, bibliografia, etc.
+\usepackage[latin1]{inputenc} % Caracteres ISO-8859-1
+\usepackage{graphicx} % Inserção de imagens
+\usepackage{amssymb} % Símbolos do tipo \mathbb
+\usepackage{amsfonts} % Símbolos do tipo \mathfrak
+\usepackage{amsmath} % Comandos do tipo \dfrac
+\usepackage{booktabs} % Pacote de formatação de tabelas
+\usepackage{multirow} % Permite multirow em tabelas ==> faz merge de linhas em células da tabela
+\usepackage{url} % Formata urls como hiperlinks
+\usepackage{hyperref} % Cria hiperlinks
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black} % Formata a aparência dos hiperlinks
+\usepackage{pdfpages} % Permite incluir páginas PDF geradas por outros aplicativos
+     
+\sloppy %para evitar palavras longas fora das margens
+
+\title{Desenvolvimento de Técnicas de Paralelização de Código}
+\author{Luiz Guilherme Castilho Martins\inst{1}, Wesley Attrot\inst{1} }
+
+\address{Departamento de Computação -- Universidade Estadual de Londrina (UEL)\\
+  Caixa Postal 10.011 -- CEP 86057-970 -- Londrina -- PR -- Brasil
+  \email{luizgui@gmail.com, wesley@uel.br}
+}
+\begin{document} 
+\maketitle
+\begin{abstract}
+        The goal of this work is the optimization of computation of loops,
+        computationally expensive programs in general spend most of their time
+        in execution of loops.
+        Loops with a big number of iterations over a big data arrays, those are
+        the ones that spend most time in execution and has a considerable
+        potential of results after optimization.
+        Tecniques of loop transformation as, loop unswitching, loop fission,
+        loop fusion, loop unrolling, among others, was used to optimization.
+        Analysis of data dependence was necessary to keep the meaning of the 
+        program after the optimizations.
+\end{abstract}
+
+\begin{resumo} 
+        O objetivo deste trabalho é otimizar a computação de \textit{loops}, os 
+        quais são conhecidos por serem responsáveis pelo maior gasto 
+        computacional de um programa. 
+        \textit{Loops} com grande número de iterações sobre grandes vetores de 
+        dados, são os que apresentam grande gasto computacional e 
+        consequentemente maior chance de resultado na otimização.
+        Técnicas de transformações de \textit{loops} como, \textit{loop 
+        unswitching, loop fission, loop fusion, loop unrolling}, entre outras, 
+        foram utilizadas para otimização.
+        A análise de dependência de dados foi utilizada para manter o 
+        significado do programa depois das otimizações.
+\end{resumo}
+%===============================================================================
+\section{Introdução}
+
+Diante da  dificuldade de se melhorar processadores \textit{single-core} devido 
+ao alto consumo de energia e as altas
+temperaturas, a indústria de processadores adotou como solução à esses problemas, 
+o desenvolvimento de processadores \textit{multi-core} \cite{Suleman:2008}, 
+além disso também considerou-se o poder de processamento quando se utilizam 
+vários processadores \textit{single-core} 
+trabalhando simultaneamente, os quais oferecem grande desempenho, maior 
+eficiênc ia energética e menor custo \cite{realcloudWehner}.
+Porém as aplicações desenvolvidas para a arquitetura \textit{single-core} não 
+utilizam-se do poder computacional dos processadores \textit{multi-core}.
+Para que as aplicações possam usufruir do alto desempenho que estes 
+processadores oferecem, as aplicações devem ser 
+divididas em múltiplas partes para que possam ser executadas em paralelo.
+
+A paralelização de código permite ao programador resolver problemas com maior 
+eficiência, porém projetar e codificar um programa paralelo continua sendo uma 
+tarefa difícil, uma vez que além de dividi-lo em pequenas tarefas, deve-se 
+considerar a concorrência entre elas, as dependências de dados, entre outros 
+fatores que dificultam o trabalho de 
+paralelização \cite{aipp}.
+
+O restante desse documento está organizado da seguinte forma: A seção 2, 
+apresenta a fundamentação teórico-metodológica e o estado da arte;
+A seção 3, apresentam os objetivos do trabalho; A seção 4, apresentam os 
+procedimento metodológios/métodos e técnicas que serão
+utilizadas no decorrer do trabalho; A seção 5, apresenta uma tabela descreve o 
+cronograma do trabalho utilizando-se das atividades descritas na seção 4.
+
+%===============================================================================
+\section{Fundamentação Teórico-Metodológica}
+\label{sec:fundamentacao}
+
+%===============================================================================
+
+\subsection{Taxonomia de Flynn}
+
+Taxonomia de Flynn, proposta em 1966 \cite{Flynn:1966} por Michael 
+Flynn e expandida em 1972 \cite{Flynn:1972}, é uma das formas de classificar o 
+paralelismo disponível no processador.  
+
+Taxonomia de Flynn utiliza o conceito de sequência de objetos ou ações, que são
+chamados de \textit{stream}.
+Flynn introduziu dois tipos de \textit{stream}, o 
+\textit{stream} de instrução e também o \textit{stream} de dados. 
+
+O \textit{stream} de instrução consiste em uma sequência de instruções. 
+Uma instrução ou \textit{instruction word (IW)} é uma cadeia de 0's e 1's que 
+representa a menor operação visível ao programador e que será executada pelo 
+processador. 
+Uma instrução pode conter uma ou mais operações, devido a esta peculiaridade,
+alguns autores utilizam \textit{instruction} para instruções que contenham 
+apenas uma operação e \textit{instruction word} para instruções que contenham 
+mais de uma operação.
+
+Existem no entanto quatro combinações de \textit{streams} que descrevem as 
+arquiteturas de computadores mais comuns \cite{Flynn:1996}:
+
+\begin{enumerate}
+        \item \textbf{SISD:} \textit{Single Instruction, Single Data}
+        \item \textbf{SIMD:} \textit{Single Instruction, Multiple Data}
+        \item \textbf{MISD:} \textit{Multiple Instruction, Single Data}
+        \item \textbf{MIMD:} \textit{Multiple Instruction, Multiple Data}
+\end{enumerate}
+
+Cada combinação de \textit{streams} caracteriza uma classe de arquitetura 
+e cada uma destas classes possui seus tipos de paralelismo específicos \cite{eopc}.
+
+%===============================================================================
+\subsection{Dependência de dados}
+
+A análise da dependência de dados em paralelização de código é crucial para que 
+durante a execução de um algoritmo não sejam realizadas operações utilizando-se 
+de dados incorretos devido à escritas ou leituras indevidas. 
+Entre as técnicas utilizadas para análise e controle da dependência de dados 
+está o grafo de dependência, garantindo a produção e consumo de dados de maneira 
+correta \cite{aapc}.
+Segundo \cite{ocfma} são três os tipos dependência de dados classificados 
+como \textit{Load-Store}:
+\begin{itemize}
+        \item \textit{True dependence}: dependência do tipo leitura depois da 
+                escrita ou \textit{Read After Write (RAW)}.
+        \item \textit{Antidependence}: dependência do tipo escrita depois da 
+                leitura ou \textit{Write After Read (WAR)}.
+        \item \textit{Output dependence}: dependência do tipo escrita depois da 
+                escrita ou \textit{Write After Write (WAW)}.
+\end{itemize}
+Transformações podem ser feitas onde existem dependências de dados, uma vez que, 
+o programa resultante da transformação seja equivalente ao programa inicial. 
+A definição de equivalência diz que dois programas são equivalentes se com a 
+mesma entrada ambos terão a mesma saída tendo sido executados na mesma 
+ordem \cite{ocfma}.
+
+%===============================================================================
+\subsection{Reestruturação de loops}
+
+Os \textit{loops} são responsáveis por grande custo computacional, assim, a 
+reestruturação de \textit{loops} é uma técnica muito importante em paralelização 
+de código assim como é uma tarefa difícil \cite{Huang2000259}.
+
+\textit{Loops} apresentam grande potencial para paralelismo e existem inúmeras 
+técnicas para reestruturá-los, assim um dos obstáculos é identificar qual a 
+melhor técnica para cada \textit{loop} \cite{Quill1994773}. 
+Entre as técnicas de reestruturação que serão estudadas durante o 
+desenvolvimento deste trabalho estão: \textit{Loop Fusion, Loop Fission, 
+Loop Reversal, Loop Interchanging e Loop Skewing} \cite{hpcfpc}.
+
+%===============================================================================
+\section{Objetivos}
+\label{sec:objetivos}
+
+asdf
+%===============================================================================
+\section {Espaço para assinaturas}
+
+
+\vspace{1cm}
+
+\hfill Londrina, \textit{15 de Abril de 2013}.
+
+
+\vspace{1cm}
+\noindent
+------------------------------------------ \hfill ------------------------------------------
+
+\hspace{1cm} Aluno \hspace{8cm} Orientador
+
+\bibliographystyle{plain} % especifica o estilo como as referências são formatadas
+\bibliography{estagio} % especifica o arquivo que contém todas as referências catalogadas.
+
+\end{document}
