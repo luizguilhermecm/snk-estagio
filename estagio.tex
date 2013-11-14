@@ -1,26 +1,30 @@
+% vim: set ai tw=80 fileencoding=utf8: 
+%-------------------------------------------------------------------------------
 \documentclass[12pt]{article}
 
 \usepackage{sbc-template}
 
-\usepackage[brazil]{babel} % TraduÁ„o de seÁıes, bibliografia, etc.
-\usepackage[latin1]{inputenc} % Caracteres ISO-8859-1
-\usepackage{graphicx} % InserÁ„o de imagens
-\usepackage{amssymb} % SÌmbolos do tipo \mathbb
-\usepackage{amsfonts} % SÌmbolos do tipo \mathfrak
+\usepackage[T1]{fontenc}		% Selecao de codigos de fonte.
+\usepackage[utf8]{inputenc}		% Codificacao do documento
+%\usepackage[brazil]{babel} % Tradu√ß√£o de se√ß√µes, bibliografia, etc.
+%\usepackage[latin1]{inputenc} % Caracteres ISO-8859-1
+\usepackage{graphicx} % Inser√ß√£o de imagens
+\usepackage{amssymb} % S√≠mbolos do tipo \mathbb
+\usepackage{amsfonts} % S√≠mbolos do tipo \mathfrak
 \usepackage{amsmath} % Comandos do tipo \dfrac
-\usepackage{booktabs} % Pacote de formataÁ„o de tabelas
-\usepackage{multirow} % Permite multirow em tabelas ==> faz merge de linhas em cÈlulas da tabela
+\usepackage{booktabs} % Pacote de formata√ß√£o de tabelas
+\usepackage{multirow} % Permite multirow em tabelas ==> faz merge de linhas em c√©lulas da tabela
 \usepackage{url} % Formata urls como hiperlinks
 \usepackage{hyperref} % Cria hiperlinks
-\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black} % Formata a aparÍncia dos hiperlinks
-\usepackage{pdfpages} % Permite incluir p·ginas PDF geradas por outros aplicativos
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black} % Formata a apar√™ncia dos hiperlinks
+\usepackage{pdfpages} % Permite incluir p√°ginas PDF geradas por outros aplicativos
      
 \sloppy %para evitar palavras longas fora das margens
 
-\title{Desenvolvimento de TÈcnicas de ParalelizaÁ„o de CÛdigo}
+\title{Otimiza√ß√£o de c√≥digo utilizando t√©cnicas de transforma√ß√£o de loops}
 \author{Luiz Guilherme Castilho Martins\inst{1}, Wesley Attrot\inst{1} }
 
-\address{Departamento de ComputaÁ„o -- Universidade Estadual de Londrina (UEL)\\
+\address{Departamento de Computa√ß√£o -- Universidade Estadual de Londrina (UEL)\\
   Caixa Postal 10.011 -- CEP 86057-970 -- Londrina -- PR -- Brasil
   \email{luizgui@gmail.com, wesley@uel.br}
 }
@@ -40,51 +44,51 @@
 \end{abstract}
 
 \begin{resumo} 
-        O objetivo deste trabalho È otimizar a computaÁ„o de \textit{loops}, os 
-        quais s„o conhecidos por serem respons·veis pelo maior gasto 
+        O objetivo deste trabalho √© otimizar a computa√ß√£o de \textit{loops}, os 
+        quais s√£o conhecidos por serem respons√°veis pelo maior gasto 
         computacional de um programa. 
-        \textit{Loops} com grande n˙mero de iteraÁıes sobre grandes vetores de 
-        dados, s„o os que apresentam grande gasto computacional e 
-        consequentemente maior chance de resultado na otimizaÁ„o.
-        TÈcnicas de transformaÁıes de \textit{loops} como, \textit{loop 
+        \textit{Loops} com grande n√∫mero de itera√ß√µes sobre grandes vetores de 
+        dados, s√£o os que apresentam grande gasto computacional e 
+        consequentemente maior chance de resultado na otimiza√ß√£o.
+        T√©cnicas de transforma√ß√µes de \textit{loops} como, \textit{loop 
         unswitching, loop fission, loop fusion, loop unrolling}, entre outras, 
-        foram utilizadas para otimizaÁ„o.
-        A an·lise de dependÍncia de dados foi utilizada para manter o 
-        significado do programa depois das otimizaÁıes.
+        foram utilizadas para otimiza√ß√£o.
+        A an√°lise de depend√™ncia de dados foi utilizada para manter o 
+        significado do programa depois das otimiza√ß√µes.
 \end{resumo}
 %===============================================================================
-\section{IntroduÁ„o}
+\section{Introdu√ß√£o}
 
 Diante da  dificuldade de se melhorar processadores \textit{single-core} devido 
 ao alto consumo de energia e as altas
-temperaturas, a ind˙stria de processadores adotou como soluÁ„o ‡ esses problemas, 
+temperaturas, a ind√∫stria de processadores adotou como solu√ß√£o √† esses problemas, 
 o desenvolvimento de processadores \textit{multi-core} \cite{Suleman:2008}, 
-alÈm disso tambÈm considerou-se o poder de processamento quando se utilizam 
-v·rios processadores \textit{single-core} 
+al√©m disso tamb√©m considerou-se o poder de processamento quando se utilizam 
+v√°rios processadores \textit{single-core} 
 trabalhando simultaneamente, os quais oferecem grande desempenho, maior 
-eficiÍnc ia energÈtica e menor custo \cite{realcloudWehner}.
-PorÈm as aplicaÁıes desenvolvidas para a arquitetura \textit{single-core} n„o 
+efici√™nc ia energ√©tica e menor custo \cite{realcloudWehner}.
+Por√©m as aplica√ß√µes desenvolvidas para a arquitetura \textit{single-core} n√£o 
 utilizam-se do poder computacional dos processadores \textit{multi-core}.
-Para que as aplicaÁıes possam usufruir do alto desempenho que estes 
-processadores oferecem, as aplicaÁıes devem ser 
-divididas em m˙ltiplas partes para que possam ser executadas em paralelo.
+Para que as aplica√ß√µes possam usufruir do alto desempenho que estes 
+processadores oferecem, as aplica√ß√µes devem ser 
+divididas em m√∫ltiplas partes para que possam ser executadas em paralelo.
 
-A paralelizaÁ„o de cÛdigo permite ao programador resolver problemas com maior 
-eficiÍncia, porÈm projetar e codificar um programa paralelo continua sendo uma 
-tarefa difÌcil, uma vez que alÈm de dividi-lo em pequenas tarefas, deve-se 
-considerar a concorrÍncia entre elas, as dependÍncias de dados, entre outros 
+A paraleliza√ß√£o de c√≥digo permite ao programador resolver problemas com maior 
+efici√™ncia, por√©m projetar e codificar um programa paralelo continua sendo uma 
+tarefa dif√≠cil, uma vez que al√©m de dividi-lo em pequenas tarefas, deve-se 
+considerar a concorr√™ncia entre elas, as depend√™ncias de dados, entre outros 
 fatores que dificultam o trabalho de 
-paralelizaÁ„o \cite{aipp}.
+paraleliza√ß√£o \cite{aipp}.
 
-O restante desse documento est· organizado da seguinte forma: A seÁ„o 2, 
-apresenta a fundamentaÁ„o teÛrico-metodolÛgica e o estado da arte;
-A seÁ„o 3, apresentam os objetivos do trabalho; A seÁ„o 4, apresentam os 
-procedimento metodolÛgios/mÈtodos e tÈcnicas que ser„o
-utilizadas no decorrer do trabalho; A seÁ„o 5, apresenta uma tabela descreve o 
-cronograma do trabalho utilizando-se das atividades descritas na seÁ„o 4.
+O restante desse documento est√° organizado da seguinte forma: A se√ß√£o 2, 
+apresenta a fundamenta√ß√£o te√≥rico-metodol√≥gica e o estado da arte;
+A se√ß√£o 3, apresentam os objetivos do trabalho; A se√ß√£o 4, apresentam os 
+procedimento metodol√≥gios/m√©todos e t√©cnicas que ser√£o
+utilizadas no decorrer do trabalho; A se√ß√£o 5, apresenta uma tabela descreve o 
+cronograma do trabalho utilizando-se das atividades descritas na se√ß√£o 4.
 
 %===============================================================================
-\section{FundamentaÁ„o TeÛrico-MetodolÛgica}
+\section{Fundamenta√ß√£o Te√≥rico-Metodol√≥gica}
 \label{sec:fundamentacao}
 
 %===============================================================================
@@ -92,24 +96,24 @@ cronograma do trabalho utilizando-se das atividades descritas na seÁ„o 4.
 \subsection{Taxonomia de Flynn}
 
 Taxonomia de Flynn, proposta em 1966 \cite{Flynn:1966} por Michael 
-Flynn e expandida em 1972 \cite{Flynn:1972}, È uma das formas de classificar o 
-paralelismo disponÌvel no processador.  
+Flynn e expandida em 1972 \cite{Flynn:1972}, √© uma das formas de classificar o 
+paralelismo dispon√≠vel no processador.  
 
-Taxonomia de Flynn utiliza o conceito de sequÍncia de objetos ou aÁıes, que s„o
+Taxonomia de Flynn utiliza o conceito de sequ√™ncia de objetos ou a√ß√µes, que s√£o
 chamados de \textit{stream}.
 Flynn introduziu dois tipos de \textit{stream}, o 
-\textit{stream} de instruÁ„o e tambÈm o \textit{stream} de dados. 
+\textit{stream} de instru√ß√£o e tamb√©m o \textit{stream} de dados. 
 
-O \textit{stream} de instruÁ„o consiste em uma sequÍncia de instruÁıes. 
-Uma instruÁ„o ou \textit{instruction word (IW)} È uma cadeia de 0's e 1's que 
-representa a menor operaÁ„o visÌvel ao programador e que ser· executada pelo 
+O \textit{stream} de instru√ß√£o consiste em uma sequ√™ncia de instru√ß√µes. 
+Uma instru√ß√£o ou \textit{instruction word (IW)} √© uma cadeia de 0's e 1's que 
+representa a menor opera√ß√£o vis√≠vel ao programador e que ser√° executada pelo 
 processador. 
-Uma instruÁ„o pode conter uma ou mais operaÁıes, devido a esta peculiaridade,
-alguns autores utilizam \textit{instruction} para instruÁıes que contenham 
-apenas uma operaÁ„o e \textit{instruction word} para instruÁıes que contenham 
-mais de uma operaÁ„o.
+Uma instru√ß√£o pode conter uma ou mais opera√ß√µes, devido a esta peculiaridade,
+alguns autores utilizam \textit{instruction} para instru√ß√µes que contenham 
+apenas uma opera√ß√£o e \textit{instruction word} para instru√ß√µes que contenham 
+mais de uma opera√ß√£o.
 
-Existem no entanto quatro combinaÁıes de \textit{streams} que descrevem as 
+Existem no entanto quatro combina√ß√µes de \textit{streams} que descrevem as 
 arquiteturas de computadores mais comuns \cite{Flynn:1996}:
 
 \begin{enumerate}
@@ -119,55 +123,159 @@ arquiteturas de computadores mais comuns \cite{Flynn:1996}:
         \item \textbf{MIMD:} \textit{Multiple Instruction, Multiple Data}
 \end{enumerate}
 
-Cada combinaÁ„o de \textit{streams} caracteriza uma classe de arquitetura 
-e cada uma destas classes possui seus tipos de paralelismo especÌficos \cite{eopc}.
+Cada combina√ß√£o de \textit{streams} caracteriza uma classe de arquitetura 
+e cada uma destas classes possui seus tipos de paralelismo espec√≠ficos \cite{eopc}.
 
 %===============================================================================
-\subsection{DependÍncia de dados}
+\subsection{Depend√™ncia de dados}
 
-A an·lise da dependÍncia de dados em paralelizaÁ„o de cÛdigo È crucial para que 
-durante a execuÁ„o de um algoritmo n„o sejam realizadas operaÁıes utilizando-se 
-de dados incorretos devido ‡ escritas ou leituras indevidas. 
-Entre as tÈcnicas utilizadas para an·lise e controle da dependÍncia de dados 
-est· o grafo de dependÍncia, garantindo a produÁ„o e consumo de dados de maneira 
+A an√°lise da depend√™ncia de dados em paraleliza√ß√£o de c√≥digo √© crucial para que 
+durante a execu√ß√£o de um algoritmo n√£o sejam realizadas opera√ß√µes utilizando-se 
+de dados incorretos devido √† escritas ou leituras indevidas. 
+Entre as t√©cnicas utilizadas para an√°lise e controle da depend√™ncia de dados 
+est√° o grafo de depend√™ncia, garantindo a produ√ß√£o e consumo de dados de maneira 
 correta \cite{aapc}.
-Segundo \cite{ocfma} s„o trÍs os tipos dependÍncia de dados classificados 
+Segundo \cite{ocfma} s√£o tr√™s os tipos depend√™ncia de dados classificados 
 como \textit{Load-Store}:
 \begin{itemize}
-        \item \textit{True dependence}: dependÍncia do tipo leitura depois da 
+        \item \textit{True dependence}: depend√™ncia do tipo leitura depois da 
                 escrita ou \textit{Read After Write (RAW)}.
-        \item \textit{Antidependence}: dependÍncia do tipo escrita depois da 
+        \item \textit{Antidependence}: depend√™ncia do tipo escrita depois da 
                 leitura ou \textit{Write After Read (WAR)}.
-        \item \textit{Output dependence}: dependÍncia do tipo escrita depois da 
+        \item \textit{Output dependence}: depend√™ncia do tipo escrita depois da 
                 escrita ou \textit{Write After Write (WAW)}.
 \end{itemize}
-TransformaÁıes podem ser feitas onde existem dependÍncias de dados, uma vez que, 
-o programa resultante da transformaÁ„o seja equivalente ao programa inicial. 
-A definiÁ„o de equivalÍncia diz que dois programas s„o equivalentes se com a 
-mesma entrada ambos ter„o a mesma saÌda tendo sido executados na mesma 
+Transforma√ß√µes podem ser feitas onde existem depend√™ncias de dados, uma vez que, 
+o programa resultante da transforma√ß√£o seja equivalente ao programa inicial. 
+A defini√ß√£o de equival√™ncia diz que dois programas s√£o equivalentes se com a 
+mesma entrada ambos ter√£o a mesma sa√≠da tendo sido executados na mesma 
 ordem \cite{ocfma}.
 
 %===============================================================================
-\subsection{ReestruturaÁ„o de loops}
+\subsection{Reestrutura√ß√£o de loops}
 
-Os \textit{loops} s„o respons·veis por grande custo computacional, assim, a 
-reestruturaÁ„o de \textit{loops} È uma tÈcnica muito importante em paralelizaÁ„o 
-de cÛdigo assim como È uma tarefa difÌcil \cite{Huang2000259}.
+Os \textit{loops} s√£o respons√°veis por grande custo computacional, assim, a 
+reestrutura√ß√£o de \textit{loops} √© uma t√©cnica muito importante em paraleliza√ß√£o 
+de c√≥digo tanto quanto √© uma tarefa dif√≠cil \cite{Huang2000259}.
 
-\textit{Loops} apresentam grande potencial para paralelismo e existem in˙meras 
-tÈcnicas para reestrutur·-los, assim um dos obst·culos È identificar qual a 
-melhor tÈcnica para cada \textit{loop} \cite{Quill1994773}. 
-Entre as tÈcnicas de reestruturaÁ„o que ser„o estudadas durante o 
-desenvolvimento deste trabalho est„o: \textit{Loop Fusion, Loop Fission, 
-Loop Reversal, Loop Interchanging e Loop Skewing} \cite{hpcfpc}.
+Ser√£o intrutuzidas a seguir as principais t√©cnicas de transforma√ß√£o de 
+\textit{loops}.
 
 %===============================================================================
-\section{Objetivos}
-\label{sec:objetivos}
+\subsubsection{Reordena√ß√£o de Declara√ß√µes}
 
-asdf
+A reordena√ß√£o de declara√ß√µes pode ser utilizada para amortizar a lat√™ncia da 
+mem√≥ria, melhorar o \textit{data locality} movendo declara√ß√µes ou \textit{loops}
+que utilizem os mesmos dados pr√≥ximas uma das outras \cite{McKinley:1996}
+A reodena√ß√£o √© considerada v√°lida sempre que respeitar a depend√™ncia de dados e 
+n√£o modificando o significado do programa.
+
+O uso de reordena√ß√£o de declara√ß√µes √© uma t√©cnica √∫til uma vez que atrav√©s dela 
+√© possivel a aplica√ß√£o de outras t√©cnicas.
+
 %===============================================================================
-\section {EspaÁo para assinaturas}
+\subsubsection{Loop Unswitching}
+
+\textit{Loop unswitching} √© uma t√©cnica simples e efici√™nte, o objetivo desta 
+t√©cnica √© remover uma ou mais declara√ß√µes de compara√ß√£o que esteja dentro do
+corpo do \textit{loop}.
+Remover uma condi√ß√£o de um \textit{loop} faz com que a condi√ß√£o envolva um, dois
+ou mais \textit{loops}, ou seja, para cada resultado da condi√ß√£o removida.
+A condi√ß√£o deve obrigatoriamente ser independente do \textit{loop}, ou seja, o
+resultado da condi√ß√£o √© sempre o mesmo n√£o dependendo das itera√ß√µes do 
+\textit{loop} \cite{Ghodrat:2008}.
+
+A vantagem de \textit{loop unswitching} √© a redu√ß√£o da frequ√™ncia da execu√ß√£o
+da condi√ß√£o, sendo executada apenas uma vez.
+A desvantagem de \textit{loop unswitching} √© o aumento da estrutura do
+\textit{loop} prejudicando a legibilidade do c√≥digo.
+
+%===============================================================================
+\subsubsection{Loop Peeling}
+
+\textit{Loop peeling} remove a primeira ou a √∫ltima itera√ß√£o de um
+\textit{loop}, colocando-a para fora do corpo \textit{loop}, fazendo com que um
+\textit{loop} que iniciaria as itera√ß√µes a partir de $0$ inicie a partir de $1$.
+Essa t√©cnica pode ser utilizada para ajudar o \textit{index} do \textit{loop}
+para a aplica√ß√£o de \textit{loop fusion} \cite{Song:2004}.
+
+%===============================================================================
+\subsubsection{Index Set Splitting}
+
+\textit{Index set splitting} ou \textit{loop peeling} √© uma generaliza√ß√£o de 
+\textit{loop peeling}. 
+Sua aplica√ß√£o se resume a dividir o \textit{index} do \textit{loop} em duas
+partes e ent√£o duplicar o \textit{loop}, sendo que um ir√° executar a primeira
+parte das itera√ß√µes e o segundo ir√° at√© a √∫ltima itera√ß√£o.
+Est√° t√©cnica √© √∫til para remover declara√ß√µes de compara√ß√£o do corpo do
+\textit{loop} que utilizem o \textit{index} do \textit{loop}
+\cite{Tasharofi:2010}.
+
+%===============================================================================
+\subsubsection{Loop Unrolling}
+
+\textit{Loop unrolling} baseia-se em replicar o corpo do \textit{loop} fazendo
+com que o n√∫mero de itera√ß√£o seja reduzido, reduzindo com isso a quantidade de
+verifica√ß√£o da condi√ß√£o de sa√≠da do \textit{loop}.
+A generaliza√ß√£o desta t√©cnica pode ser aplicada duplicando-se o corpo do
+\textit{loop} $n$ vezes e assim dividindo a quantidade de itera√ß√µes por $n$.
+Em casos onde o n√∫mero de itera√ß√µes n√£o for conhecido, o uso desta t√©cnica
+implicar√° em tratamentos extras para garantir que todas itera√ß√µes foram
+computadas, em casos de uso da generaliza√ß√£o de \textit{loop unrolling} com $n$
+grande suficiente √© necess√°rio um segundo \textit{loop} para terminar 
+as itera√ß√µes.
+O uso de \textit{loop unrolling} √© sempre v√°lida se mantiver a
+depend√™ncia e o significado do programa \cite{Dragomir:2009}.
+
+%===============================================================================
+\subsubsection{Loop Fusion}
+
+\textit{Loop fusion} transforma dois \textit{loops} adjacentes com o mesmo
+espa√ßo de itera√ß√£o em um \textit{loop} simples.
+Esta t√©cnica aplicada a dois \textit{loops} que referenciam o mesmo conjunto de
+dados apresenta um melhora no \textit{temporal locality}, melhorando o
+desempenho da mem√≥ria \textit{cache} e da mem√≥ria virtual \cite{Wolf:1996}.
+
+O uso de \textit{loop fusion} em dois ou mais \textit{loops} requer que sejam 
+adjacentes, com limites de itera√ß√£o compat√≠veis e sem rela√ß√£o de depend√™ncia 
+entre eles. 
+Esta seria uma aplica√ß√£o trivial de \textit{loop fusion}.
+Em casos onde algumas das condi√ß√µes n√£o estejam satisfeitas, ser√° necess√°rio a o
+uso de outras t√©cnicas para possibilitar o uso de \textit{loop fusion}.
+
+\textit{Loops} com diferentes limites de itera√ß√£o, poder√° ser utilizado
+\textit{loop peeling, loop splitting} ou at√© \textit{loop unrolling} para que
+fiquem compat√≠veis. 
+O uso destas podem trazer desvantagens como, a adi√ß√£o de c√≥digo extra e
+aumentar a complexidade do \textit{loop}, fazendo com que a legibilidade do
+c√≥digo seja comprometida.
+Em casos onde adicionar uma declara√ß√£o de condi√ß√£o faz-se necess√°rio, dever√° ser
+considerado o custo adicional sobre o teste condicional.
+
+Se os \textit{loops} n√£o forem adjacentes, ser√° necess√°rio realizar uma
+reornde√ß√£o de declara√ß√µes.
+
+O uso de \textit{loop fusion} √© sempre v√°lido se todas as rela√ß√µes de 
+depend√™ncia entre os \textit{loops} for preservada e n√£o alterar o significado do
+programa. 
+
+%===============================================================================
+\subsubsection{Loop Fission}
+
+\textit{Loop fisson} transforma um \textit{loop} simples e o divide em dois
+\textit{loops} menores. 
+Uma vez que um \textit{loop} √© divido, o \textit{index} do \textit{loop} ser √°
+utilizado em ambos os \textit{loop}.
+O uso de \textit{loop fission} pode melhorar o \textit{memory locality}, uma vez
+que a quantidade de dados acessados por itera√ß√£o √© menor \cite{hpcfpc}.
+
+
+%===============================================================================
+\section{Experimentos}
+\label{sec:experimentos}
+
+%===============================================================================
+\section {Espa√ßo para assinaturas}
 
 
 \vspace{1cm}
@@ -181,7 +289,7 @@ asdf
 
 \hspace{1cm} Aluno \hspace{8cm} Orientador
 
-\bibliographystyle{plain} % especifica o estilo como as referÍncias s„o formatadas
-\bibliography{estagio} % especifica o arquivo que contÈm todas as referÍncias catalogadas.
+\bibliographystyle{plain} % especifica o estilo como as refer√™ncias s√£o formatadas
+\bibliography{estagio} % especifica o arquivo que cont√©m todas as refer√™ncias catalogadas.
 
 \end{document}
