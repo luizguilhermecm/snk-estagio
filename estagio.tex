@@ -4,6 +4,32 @@
 
 \usepackage{sbc-template}
 
+\usepackage[Algoritmo,plain]{algorithm}
+\usepackage{algorithmic}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{morefloats}
+\definecolor{red}{rgb}{0.6,0,0} % for keywords
+\definecolor{green}{rgb}{0.25,0.5,0.35} % comments
+\definecolor{purple}{rgb}{0.5,0,0.35} % strings
+\definecolor{blue}{rgb}{0.25,0.35,0.75} % doc
+
+\lstset{language=c,
+basicstyle=\ttfamily\small,
+keywordstyle=\color{red}\bfseries,
+stringstyle=\color{purple},
+commentstyle=\color{green},
+morecomment=[s][\color{blue}]{/**}{*/},
+numbers=left,
+numberstyle=\tiny\color{black},
+stepnumber=1,
+numbersep=7pt,
+tabsize=2,
+showspaces=false,
+showstringspaces=false}
+
+
+
 \usepackage[T1]{fontenc}		% Selecao de codigos de fonte.
 \usepackage[utf8]{inputenc}		% Codificacao do documento
 %\usepackage[brazil]{babel} % Tradução de seções, bibliografia, etc.
@@ -19,6 +45,8 @@
 \hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black} % Formata a aparência dos hiperlinks
 \usepackage{pdfpages} % Permite incluir páginas PDF geradas por outros aplicativos
      
+\renewcommand{\tablename}{Tabela}
+
 \sloppy %para evitar palavras longas fora das margens
 
 \title{Otimização de código utilizando técnicas de transformação de loops}
@@ -48,7 +76,7 @@
         quais são conhecidos por serem responsáveis pelo maior gasto 
         computacional de um programa. 
         \textit{Loops} com grande número de iterações sobre grandes vetores de 
-        dados, são os que apresentam grande gasto computacional e 
+        dados são os que apresentam grande gasto computacional e 
         consequentemente maior chance de resultado na otimização.
         Técnicas de transformações de \textit{loops} como, \textit{loop 
         unswitching, loop fission, loop fusion, loop unrolling}, entre outras, 
@@ -58,6 +86,8 @@
 \end{resumo}
 %===============================================================================
 \section{Introdução}
+
+
 
 Diante da  dificuldade de se melhorar processadores \textit{single-core} devido 
 ao alto consumo de energia e as altas
@@ -80,12 +110,28 @@ considerar a concorrência entre elas, as dependências de dados, entre outros
 fatores que dificultam o trabalho de 
 paralelização \cite{aipp}.
 
-O restante desse documento está organizado da seguinte forma: A seção 2, 
-apresenta a fundamentação teórico-metodológica e o estado da arte;
-A seção 3, apresentam os objetivos do trabalho; A seção 4, apresentam os 
-procedimento metodológios/métodos e técnicas que serão
-utilizadas no decorrer do trabalho; A seção 5, apresenta uma tabela descreve o 
-cronograma do trabalho utilizando-se das atividades descritas na seção 4.
+Programas computacionalmente custosos em geral gastam a maior parte do tempo na
+computação de \textit{loops} extrair paralelismo destes \textit{loops} pode 
+ser significativo no desempenho de um programa.
+Diante deste desafio uma das soluções é a utilização de transformações de
+\textit{loops} para melhorar seu desempenho.
+\cite{hpcfpc}.
+
+O restante desse documento está organizado da seguinte forma: 
+A seção 2 apresentam os objetivos do trabalho.
+A seção 3 apresenta a fundamentação teórico-metodológica.
+A seção 4 apresentam os experimentos e os resultados obtidos. 
+A seção 5 apresenta a conclusão deste trabalho.
+%===============================================================================
+\section{Objetivo}
+
+O objetivo principal deste trabalho foi obter ganho de desempenho na execução 
+de programa através da aplicação de técnicas de transformação de \textit{loops}.
+
+Além disso, uma análise de dependência de dados foi necessária, uma vez que a 
+utilização das técnicas exige que o programa seja alterado e
+com isso as dependências de dados do programa podem ser violadas, alterando o 
+significado do programa.
 
 %===============================================================================
 \section{Fundamentação Teórico-Metodológica}
@@ -101,14 +147,14 @@ paralelismo disponível no processador.
 
 Taxonomia de Flynn utiliza o conceito de sequência de objetos ou ações, que são
 chamados de \textit{stream}.
-Flynn introduziu dois tipos de \textit{stream}, o 
+Flynn introduziu dois tipos de \textit{stream}: o 
 \textit{stream} de instrução e também o \textit{stream} de dados. 
 
 O \textit{stream} de instrução consiste em uma sequência de instruções. 
 Uma instrução ou \textit{instruction word (IW)} é uma cadeia de 0's e 1's que 
 representa a menor operação visível ao programador e que será executada pelo 
 processador. 
-Uma instrução pode conter uma ou mais operações, devido a esta peculiaridade,
+Uma instrução pode conter uma ou mais operações e devido a esta peculiaridade,
 alguns autores utilizam \textit{instruction} para instruções que contenham 
 apenas uma operação e \textit{instruction word} para instruções que contenham 
 mais de uma operação.
@@ -117,10 +163,10 @@ Existem no entanto quatro combinações de \textit{streams} que descrevem as
 arquiteturas de computadores mais comuns \cite{Flynn:1996}:
 
 \begin{enumerate}
-        \item \textbf{SISD:} \textit{Single Instruction, Single Data}
-        \item \textbf{SIMD:} \textit{Single Instruction, Multiple Data}
-        \item \textbf{MISD:} \textit{Multiple Instruction, Single Data}
-        \item \textbf{MIMD:} \textit{Multiple Instruction, Multiple Data}
+        \item \textbf{SISD:} \textit{Single Instruction, Single Data};
+        \item \textbf{SIMD:} \textit{Single Instruction, Multiple Data};
+        \item \textbf{MISD:} \textit{Multiple Instruction, Single Data};
+        \item \textbf{MIMD:} \textit{Multiple Instruction, Multiple Data}.
 \end{enumerate}
 
 Cada combinação de \textit{streams} caracteriza uma classe de arquitetura 
@@ -139,13 +185,13 @@ Segundo \cite{ocfma} são três os tipos dependência de dados classificados
 como \textit{Load-Store}:
 \begin{itemize}
         \item \textit{True dependence}: dependência do tipo leitura depois da 
-                escrita ou \textit{Read After Write (RAW)}.
+                escrita ou \textit{Read After Write (RAW)};
         \item \textit{Antidependence}: dependência do tipo escrita depois da 
-                leitura ou \textit{Write After Read (WAR)}.
+                leitura ou \textit{Write After Read (WAR)};
         \item \textit{Output dependence}: dependência do tipo escrita depois da 
                 escrita ou \textit{Write After Write (WAW)}.
 \end{itemize}
-Transformações podem ser feitas onde existem dependências de dados, uma vez que, 
+Transformações podem ser feitas onde existem dependências de dados, uma vez que 
 o programa resultante da transformação seja equivalente ao programa inicial. 
 A definição de equivalência diz que dois programas são equivalentes se com a 
 mesma entrada ambos terão a mesma saída tendo sido executados na mesma 
@@ -176,8 +222,8 @@ O uso de reordenação de declarações é uma técnica útil uma vez que atrav�
 %===============================================================================
 \subsubsection{Loop Unswitching}
 
-\textit{Loop unswitching} é uma técnica simples e eficiênte, o objetivo desta 
-técnica é remover uma ou mais declarações de comparação que esteja dentro do
+\textit{Loop unswitching} é uma técnica simples e eficiênte cujo o objetivo 
+é remover uma ou mais declarações de comparação que esteja dentro do
 corpo do \textit{loop}.
 Remover uma condição de um \textit{loop} faz com que a condição envolva um, dois
 ou mais \textit{loops}, ou seja, para cada resultado da condição removida.
@@ -187,7 +233,7 @@ resultado da condição é sempre o mesmo não dependendo das iterações do
 
 A vantagem de \textit{loop unswitching} é a redução da frequência da execução
 da condição, sendo executada apenas uma vez.
-A desvantagem de \textit{loop unswitching} é o aumento da estrutura do
+A sua desvantagem de é o aumento da estrutura do
 \textit{loop} prejudicando a legibilidade do código.
 
 %===============================================================================
@@ -215,7 +261,7 @@ Está técnica é útil para remover declarações de comparação do corpo do
 \subsubsection{Loop Unrolling}
 
 \textit{Loop unrolling} baseia-se em replicar o corpo do \textit{loop} fazendo
-com que o número de iteração seja reduzido, reduzindo com isso a quantidade de
+com que o número de iteração seja reduzido, diminuindo o \textit{overhead} de
 verificação da condição de saída do \textit{loop}.
 A generalização desta técnica pode ser aplicada duplicando-se o corpo do
 \textit{loop} $n$ vezes e assim dividindo a quantidade de iterações por $n$.
@@ -233,20 +279,19 @@ dependência e o significado do programa \cite{Dragomir:2009}.
 \textit{Loop fusion} transforma dois \textit{loops} adjacentes com o mesmo
 espaço de iteração em um \textit{loop} simples.
 Esta técnica aplicada a dois \textit{loops} que referenciam o mesmo conjunto de
-dados apresenta um melhora no \textit{temporal locality}, melhorando o
-desempenho da memória \textit{cache} e da memória virtual \cite{Wolf:1996}.
+dados apresenta uma melhora no \textit{temporal locality}\cite{Wolf:1996}.
 
 O uso de \textit{loop fusion} em dois ou mais \textit{loops} requer que sejam 
 adjacentes, com limites de iteração compatíveis e sem relação de dependência 
 entre eles. 
 Esta seria uma aplicação trivial de \textit{loop fusion}.
-Em casos onde algumas das condições não estejam satisfeitas, será necessário a o
+Em casos onde algumas das condições não estejam satisfeitas será necessário a o
 uso de outras técnicas para possibilitar o uso de \textit{loop fusion}.
 
 \textit{Loops} com diferentes limites de iteração, poderá ser utilizado
 \textit{loop peeling, loop splitting} ou até \textit{loop unrolling} para que
 fiquem compatíveis. 
-O uso destas podem trazer desvantagens como, a adição de código extra e
+O uso destas podem trazer desvantagens como a adição de código extra e
 aumentar a complexidade do \textit{loop}, fazendo com que a legibilidade do
 código seja comprometida.
 Em casos onde adicionar uma declaração de condição faz-se necessário, deverá ser
@@ -256,7 +301,7 @@ Se os \textit{loops} não forem adjacentes, será necessário realizar uma
 reorndeção de declarações.
 
 O uso de \textit{loop fusion} é sempre válido se todas as relações de 
-dependência entre os \textit{loops} for preservada e não alterar o significado do
+dependência entre os \textit{loops} forem preservadas e não alterar o significado do
 programa. 
 
 %===============================================================================
@@ -271,8 +316,336 @@ que a quantidade de dados acessados por iteração é menor \cite{hpcfpc}.
 
 
 %===============================================================================
-\section{Experimentos}
+\section{Experimentos e Resultados}
 \label{sec:experimentos}
+
+Para a realização dos experimento foi escolhido o programa 
+\textit{wat\footnote{https://github.com/luizguilhermecm/wat}} 
+um equalizador de áudio de 1 e 2 canais.
+A escolha de \textit{wat} foi motivada pela fato deste possuir
+\textit{loops} com grande espaço de iteração sobre grande quantidade 
+de dados, estas são as características de \textit{loops} custosos, logo, estes 
+também possuem potencial para obter ganho de desempenho através da aplicação de 
+tranformações de \textit{loops}.
+
+Os experimentos realizados foram executados em uma máquina com as seguintes
+configuração: processador, \textit{Intel Core 2 Duo, 2.4 GHz}, 
+memória \textit{4 GB 1064 MHz DD3} e 
+\textit{HD 256 GB Solid State SATA Drive}.
+
+Para compilação dos resultados, foram realizados dez medições de tempo e então
+feita a média geométrica destes tempos.
+
+\subsection{Experimentos}
+
+Todos os \textit{loops} de \textit{wat} que apresentam as características 
+de \textit{loops} custosos foram utilizados nos experimentos. 
+
+\begin{algorithm}[H]
+  \caption{\textit{Loop} extraído de \textit{wat}.}
+    \label{read_data_orig}
+\lstinputlisting[language=c]{src/read_data_orig.c}
+\end{algorithm}
+
+
+Dos seis \textit{loops} analisados, os
+algoritmos~\ref{read_data_orig},~\ref{fix_data_orig},~\ref{convert_double_orig}
+e~\ref{back_data_orig}, tinham declaração de condição no corpo
+do \textit{loop}.
+O fato das comparações estarem dentro do corpo do \textit{loop} implica que
+estas comparações são realizadas a cada iteração do \textit{loop}.
+Uma vez que estas verificações não depende da iteração do \textit{loop} e também
+não dependem dos dados calculados no corpo do \textit{loop}, logo, estas
+declarações de comparação são independente do \textit{loop} e poderiam ser
+removidas.
+
+\begin{algorithm}[H]
+  \caption{\textit{Loop} extraído de \textit{wat}.}
+    \label{fix_data_orig}
+\lstinputlisting[language=c]{src/fix_data_orig.c}
+\end{algorithm}
+
+
+A técnica \textit{loop unswitching} foi aplicada em todos os casos, 
+assim removendo as declarações do corpo de cada \textit{loop}. 
+
+Os resultados obtidos em todas as quatro aplicações de \textit{loop unswitching} 
+foram positivos em questão de desempenho. 
+Somente o uso de \textit{loop unswitching} nestes \textit{loops}, significou uma
+melhora 5\% na computação de cada \textit{loop}.
+
+A técnica \textit{loop unrolling} foi aplicada em todos os algoritmos na
+tentativa de diminuir o número de iterações dos \textit{loops} e também melhorar
+o \textit{memory locality}. 
+Os resultados obtidos por \textit{loop unrolling} foram expressivos em casos
+onde o \textit{loop} iterava sobre uma diversidade pequena de dados.
+Nos casos onde a quantidade de dados diferentes eram grandes
+o desempenho de \textit{loop unrolling} foi pouco ou nada significativo.
+
+\begin{algorithm}[H]
+  \caption{\textit{Loop} extraído de \textit{wat}.}
+    \label{convert_double_orig}
+\lstinputlisting[language=c]{src/convert_double_orig.c}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{\textit{Loop} extraído de \textit{wat}.}
+    \label{save_file_orig}
+\lstinputlisting[language=c]{src/save_file_orig.c}
+\end{algorithm}
+
+
+O uso mais expressivo de \textit{loop unrolling} foi no \textit{loop} do
+algoritmo~\ref{save_file_orig} que é o mais
+custoso do programa, devido ao gargalo de escrita em disco.
+Foi aplicado \textit{loop unrolling} replicando o corpo do \textit{loop} 2, 4, 8
+e 16 vezes. O melhor desempenho foi ao replicar 4 vezes, apresentando um ganho
+de desempenho de quase 10\%.
+
+O uso da técnica \textit{loop fission} mostrou-se bastante desafiadora, uma vez
+que apresentou altos e baixos no desempenho.
+O uso de \textit{loop fission} sem utilizar outras técnicas em conjunto não
+apresentaram melhoras, embora o seu uso combinado com \textit{loop unrolling}
+potencializa as características de ambas as técnicas, por acessar um volume
+maior do mesmo dado na memória.
+
+\textit{Loop fission} foi aplicada nos
+algoritmos~\ref{read_data_orig},~\ref{back_data_orig} e~\ref{fix_data_orig}
+apresentando melhora de desempenho dos algoritmos~\ref{back_data_orig}
+e~\ref{fix_data_orig}.
+
+\begin{algorithm}[H]
+  \caption{\textit{Loop} extraído de \textit{wat}.}
+    \label{back_data_orig}
+\lstinputlisting[language=c]{src/back_data_orig.c}
+\end{algorithm}
+
+
+\textit{Index set splitting} foi responsável pelo maior ganho individual de
+desempenho, uma vez que o algoritmo~\ref{equalize_orig} tem um \textit{loop} 
+com onze condições dependentes do \textit{loop} aninhadas. 
+A aplicação de \textit{index set splitting} no algoritmo~\ref{equalize_orig} 
+dividiu-o em onze \textit{loops} sem que nenhum deles tivessem declarações 
+condicionais no corpo do \textit{loop}. 
+Isso significou um ganho de desempenho de 50\% no custo da computação daquele
+\textit{loop}.
+
+\textit{Loop fusion} aplicada no algoritmo~\ref{convert_double_orig} não
+apresentou resultado positivo, uma vez que tornou o corpo do \textit{loop}
+grande demais e fazendo com que ajustes custosos fossem necessários para ajustar
+as iterações dos \textit{loops}.
+
+As
+tabelas~\ref{tabela_read_data},~\ref{tabela_fix_data},~\ref{tabela_equalize},~\ref{tabela_back_data},~\ref{tabela_convert_double}
+e~\ref{tabela_save_file} apresentam os resultados da aplicação das técnicas em
+cada um dos \textit{loops} retirados de \textit{wat}.
+
+\begin{algorithm}[H]
+  \caption{\textit{Loop} extraído de \textit{wat}.}
+    \label{equalize_orig}
+\lstinputlisting[language=c]{src/equalize_orig.c}
+\end{algorithm}
+
+\begin{table}[H]
+  \caption{Resultados das técnicas sobre o algoritmo~\ref{read_data_orig}.}
+  \label{tabela_read_data}
+\begin{center}
+  \begin{tabular}{|c|c|}
+    \hline
+    Técnicas aplicadas & Tempo de execução\\
+    \hline
+    nenhuma & 470 \textit{ms} \\
+    \hline
+    \textit{loop unswitching} & 448 \textit{ms} \\
+    \hline
+    \textit{loop unswitching, loop unroll} & 444 \textit{ms} \\
+    \hline
+    \textit{loop unswitching, loop fission} & 501 \textit{ms} \\
+    \hline
+    \textit{loop unswitching, loop fisson, loop unroll} &  480 \textit{ms} \\
+    \hline
+  \end{tabular}
+\end{center}
+\end{table}
+
+
+\begin{table}[H]
+  \caption{Resultados das técnicas sobre o algoritmo~\ref{fix_data_orig}.}
+  \label{tabela_fix_data}
+\begin{center}
+  \begin{tabular}{|c|c|}
+    \hline
+    Técnicas aplicadas & Tempo de execução\\
+    \hline
+    nenhuma & 485 \textit{ms} \\
+    \hline
+    \textit{loop unswitching} & 462 \textit{ms} \\
+    \hline
+    \textit{loop unswitching, loop unroll} & 443 \textit{ms} \\
+    \hline
+    \textit{loop unswitching, loop fission} & 485 \textit{ms} \\
+    \hline
+    \textit{loop unswitching, loop fisson, loop unroll} & 435 \textit{ms} \\
+    \hline
+  \end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+  \caption{Resultados das técnicas sobre o algoritmo~\ref{equalize_orig}.}
+  \label{tabela_equalize}
+\begin{center}
+  \begin{tabular}{|c|c|}
+    \hline
+    Técnicas aplicadas & Tempo de execução\\
+    \hline
+    nenhuma & 240 \textit{ms} \\
+    \hline
+    \textit{index set splitting} & 145 \textit{ms} \\
+    \hline
+    \textit{index set splitting, loop unroll} & 75 \textit{ms} \\
+    \hline
+  \end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+  \caption{Resultados das técnicas sobre o algoritmo~\ref{back_data_orig}.}
+  \label{tabela_back_data}
+\begin{center}
+  \begin{tabular}{|c|c|}
+    \hline
+    Técnicas aplicadas & Tempo de execução\\
+    \hline
+    nenhuma & 150 \textit{ms} \\
+    \hline
+     \textit{loop unswitching} & 147 \textit{ms} \\
+    \hline
+     \textit{loop unswitching, loop unroll} & 148 \textit{ms} \\
+    \hline
+     \textit{loop unswitching, loop fission} & 150 \textit{ms} \\
+    \hline
+    \textit{loop unswitching, loop fisson, loop unroll} & 144 \textit{ms} \\
+    \hline
+  \end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+  \caption{Resultados das técnicas sobre o algoritmo~\ref{convert_double_orig}.}
+  \label{tabela_convert_double}
+\begin{center}
+  \begin{tabular}{|c|c|}
+    \hline
+ Técnicas aplicadas & Tempo de execução\\
+    \hline
+    nenhuma & 494 \textit{ms} \\
+    \hline
+     \textit{loop unswitching} & 450 \textit{ms} \\
+    \hline
+    \textit{loop unswitching, loop unrolling}& 422 \textit{ms} \\
+    \hline
+    \textit{loop unswitching, loop fusion} & 477 \textit{ms} \\
+    \hline
+  \end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+  \caption{Resultados das técnicas sobre o algoritmo~\ref{save_file_orig}.}
+  \label{tabela_save_file}
+\begin{center}
+  \begin{tabular}{|c|c|}
+    \hline
+    Técnicas aplicadas & Tempo de execução\\
+    \hline
+    nenhuma & 6910 \textit{ms} \\
+    \hline
+    \textit{loop unrolling} & 6296 \textit{ms} \\
+    \hline
+  \end{tabular}
+\end{center}
+\end{table}
+
+
+
+\subsection{Resultados Experimentais}
+
+Considerando os resultados experimentais da tabela~\ref{tabela_resultados}.
+O tempo total de execução dos \textit{loops} analisados foi de 8750 \textit{ms},
+após a aplicação das técnicas de tranformação de \textit{loops} o tempo total
+foi de 7816 \textit{ms}, ou seja, houve uma melhora de 11.94\% no tempo de  
+computação destes \textit{loops}.
+
+\begin{table}[h]
+  \caption{Resultados experimentais.}
+  \label{tabela_resultados}
+\begin{center}
+  \begin{tabular}{|c|c|c|c|}
+    \hline
+    Algoritmo & Tempo sem otimização & Tempo com otimização & Ganho \%\\
+    \hline
+    Algoritmo~\ref{read_data_orig} & 470 \textit{ms} & 444 \textit{ms} & 5.85\% \\
+    \hline
+    Algoritmo~\ref{fix_data_orig} & 485 \textit{ms} & 435 \textit{ms} & 11.26\% \\
+    \hline
+    Algoritmo~\ref{equalize_orig} & 240 \textit{ms} & 75 \textit{ms} & 320\% \\
+    \hline
+    Algoritmo~\ref{back_data_orig} & 150 \textit{ms} & 144 \textit{ms} & 4.16\% \\
+    \hline
+    Algoritmo~\ref{convert_double_orig} & 494 \textit{ms} & 422 \textit{ms} & 17.06\% \\
+    \hline
+    Algoritmo~\ref{save_file_orig} & 6910 \textit{ms} & 6296 \textit{ms} & 9.75\% \\
+    \hline
+  \end{tabular}
+\end{center}
+\end{table}
+
+Considerando o tempo de execução de \textit{wat} na equalização de um
+arquivo de áudio \textit{sterio} (2 canais de áudio) de 40 \textit{MB} e
+com 4 minutos e 15 segundos de duração, 
+o tempo total de execução de \textit{wat} sem otimização é de 19396 \textit{ms} 
+e o tempos de execução otimizado é de 18062 \textit{ms}, ou seja, uma melhora de 
+7.5\%. 
+O percentual de desempenho é menor devido ao fato de que o cálculo da
+transformada de Fourier \cite{fft} utilizado em \textit{wat} não pode ser otimizado, uma
+vez que, foi utilizado um código já otimizado para este cálculo.
+
+
+\section{Conclusão e Trabalhos Futuros}
+
+O objetivo desse trabalho é aplicar técnicas de transformação de \textit{loops} 
+em uma aplicação para melhora de seu desempenho. 
+A aplicação utilizada foi o programa de equalização de áudio \textit{wat}. 
+Embora existam muitas técnicas, a obtenção de benefícios em usá-las é uma 
+característica empírica. 
+Os resultados obtidos com as otimizações mostraram que o uso de técnicas de
+transformação de \textit{loops} podem significar um grande impacto no desempenho
+do programa.
+Casos onde as técnicas não obtiveram resultados significativos, acabou por ficar
+evidente que o custo computacional estava em chamadas de função que não podem
+ser melhoradas com transformação de \textit{loop}.
+
+Dessa forma, pode-se elencar alguns trabalhos futuros a fim de se chegar em 
+resultados ainda mais expressivos do que os aqui obtidos. 
+
+Entre os trabalhos futuros é desejável que se aborde toda a questão de 
+transformação de \textit{loops} voltados a uma arquitetura específica. 
+Esse tipo de investigação pode ser motivada por possíveis comportamentos 
+diferenciados de um mesmo algoritmo conforme a plataforma de 
+\textit{hardware} tal como memória \textit{cache} e \textit{intruction cache}.
+
+Técnicas de otimização de código a serem aplicados naqueles que estão no
+corpo do \textit{loop} pode ser primordial para que o custo compucional do
+\textit{loop} seja reduzido, tal como utilizar funções \textit{inline} e
+substituição de variáveis, evitando gasto com acesso a memória através de
+ponteiros.
+
+A utilização das ténicas de transformações de \textit{loops} voltadas à
+utilização de \textit{threads} em processadores \textit{multi-cores}.
+
+
+
 
 %===============================================================================
 \section {Espaço para assinaturas}
@@ -280,7 +653,7 @@ que a quantidade de dados acessados por iteração é menor \cite{hpcfpc}.
 
 \vspace{1cm}
 
-\hfill Londrina, \textit{15 de Abril de 2013}.
+\hfill Londrina, \textit{14 de Novembro de 2013}.
 
 
 \vspace{1cm}
